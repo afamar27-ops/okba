@@ -18,21 +18,24 @@ All amounts are in DZD.
   charges and payments between you. It assumes the sourcer pays for the goods and shipping.
   Record a payment whenever you hand money to each other.
 
-## Run it on your phones
+## Open the app
 
-The database is already set up (Supabase project `okba`) and the app is connected to it.
+The app is a website: **https://afamar27-ops.github.io/okba/**
 
-1. On a computer with Node.js:
-   ```bash
-   git clone https://github.com/afamar27-ops/okba
-   cd okba
-   npm install
-   npx expo start
-   ```
-2. Install **Expo Go** on both phones and scan the QR code (iPhone: with the Camera app).
-   The phones must be on the same Wi-Fi as the computer, or run `npx expo start --tunnel`.
-3. Each of you taps **Create account**, then picks a role. Each role can only be taken once.
+1. Open the link on your phone (Chrome on Android, Safari on iPhone).
+2. Add it to your home screen: Android: menu ⋮ → **Add to Home screen**. iPhone: Share → **Add to Home Screen**.
+3. Each of you taps **Create account**, confirms the email, signs in and picks a role. Each role can only be taken once.
 4. After both accounts exist, in Supabase go to **Authentication → Sign In / Providers** and turn off
    "Allow new users to sign up" so nobody else can join.
+
+Every push to `main` rebuilds and redeploys the site automatically (`.github/workflows/deploy.yml`).
+The database is the Supabase project `okba`; its structure is in `supabase/schema.sql`.
+
+## Developing locally
+
+```bash
+npm install
+npx expo start
+```
 
 To install it as a real app (without Expo Go), build it with EAS: https://docs.expo.dev/build/setup/

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "sourcing-app",
+    "name": "China Sourcing",
     "slug": "sourcing-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,11 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "experiments": {
+      "baseUrl": "/okba"
     }
   }
 }

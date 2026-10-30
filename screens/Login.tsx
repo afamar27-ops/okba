@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { showError } from '../lib/data';
+import { notify, showError } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Choice, colors, Field, styles } from '../lib/ui';
 import type { Profile, Role } from '../lib/types';
@@ -26,7 +26,13 @@ export function Login() {
         <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
         <Button title="Sign in" disabled={busy} onPress={() => run(() => supabase.auth.signInWithPassword({ email, password }))} />
         <Button title="Create account" variant="secondary" disabled={busy}
-          onPress={() => run(() => supabase.auth.signUp({ email, password }))} />
+          onPress={() => run(async () => {
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (!error && !data.session) {
+              notify('Check your email', 'Open the confirmation link we sent you, then come back and sign in.');
+            }
+            return { error };
+          })} />
       </Card>
     </ScrollView>
   );

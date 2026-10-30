@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert, Platform, ScrollView, Text, View } from 'react-native';
 import { formatDZD, orderTotals } from '../lib/calc';
-import { showError, useData } from '../lib/data';
+import { notify, showError, useData } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { Role, STATUS_LABELS, STATUSES, Status } from '../lib/types';
 import { Button, Card, Choice, colors, Header, Row, styles } from '../lib/ui';
@@ -44,7 +44,7 @@ export function OrderDetail({ orderId, onBack, onEdit }: { orderId: string; onBa
   const advance = () => {
     if (!next) return;
     if (next === 'delivered') {
-      if (!deliveredBy) return Alert.alert('Who delivered?', 'Choose who delivered the order and collected the money.');
+      if (!deliveredBy) return notify('Who delivered?', 'Choose who delivered the order and collected the money.');
       return update({ status: next, delivered_by: deliveredBy, delivered_date: new Date().toISOString().slice(0, 10) });
     }
     update({ status: next });

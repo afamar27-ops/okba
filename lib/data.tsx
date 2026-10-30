@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { supabase } from './supabase';
 import type { Charge, Client, OrderWithItems, Profile, Transfer } from './types';
 
@@ -18,8 +18,14 @@ type Data = {
 
 const Ctx = createContext<Data | null>(null);
 
+// Alert.alert does nothing in a browser, so fall back to window.alert there.
+export function notify(title: string, message: string) {
+  if (Platform.OS === 'web') window.alert(`${title}\n\n${message}`);
+  else Alert.alert(title, message);
+}
+
 export function showError(error: { message: string } | null) {
-  if (error) Alert.alert('Error', error.message);
+  if (error) notify('Error', error.message);
   return Boolean(error);
 }
 
