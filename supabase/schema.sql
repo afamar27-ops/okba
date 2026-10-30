@@ -1,10 +1,10 @@
--- Run this once in Supabase: Dashboard -> SQL Editor -> New query -> paste -> Run.
+-- Already applied to the Supabase project 'okba'. Kept here as the record of the database structure.
 -- Roles: 'sourcer' brings goods from China, 'seller' gets orders from clients.
 
 create table profiles (
   id uuid primary key references auth.users on delete cascade,
   name text not null,
-  role text not null check (role in ('sourcer', 'seller'))
+  role text not null unique check (role in ('sourcer', 'seller')) -- one account per role
 );
 
 create table clients (
@@ -63,12 +63,27 @@ create table transfers (
   created_at timestamptz not null default now()
 );
 
--- Only signed-in users (the two of you) can read or write anything.
+-- Only the two partners can see or change data.
+create schema private;
+grant usage on schema private to authenticated;
+
+create function private.is_partner() returns boolean
+language sql stable security definer set search_path = public
+as $$ select exists (select 1 from profiles where id = auth.uid()) $$;
+
+alter table profiles enable row level security;
+create policy "partners read profiles" on profiles for select to authenticated using (private.is_partner() or id = auth.uid());
+create policy "create own profile" on profiles for insert to authenticated with check (id = auth.uid());
+create policy "update own profile" on profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+
 do $$
 declare t text;
 begin
-  foreach t in array array['profiles', 'clients', 'orders', 'order_items', 'charges', 'transfers'] loop
+  foreach t in array array['clients', 'orders', 'order_items', 'charges', 'transfers'] loop
     execute format('alter table %I enable row level security', t);
-    execute format('create policy "signed in users" on %I for all to authenticated using (true) with check (true)', t);
+    execute format('create policy "partners only" on %I for all to authenticated using (private.is_partner()) with check (private.is_partner())', t);
   end loop;
 end $$;
+
+revoke execute on function private.is_partner() from anon, public;
+grant execute on function private.is_partner() to authenticated;
