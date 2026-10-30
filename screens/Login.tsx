@@ -1,38 +1,55 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { notify, showError } from '../lib/data';
+import { showError } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { Button, Card, Choice, colors, Field, styles } from '../lib/ui';
 import type { Profile, Role } from '../lib/types';
+
+const FRIENDLY_ERRORS: Record<string, string> = {
+  'Invalid login credentials': 'Wrong email or password. If you just created the account, confirm your email first.',
+  'Email not confirmed': 'Please open the confirmation link in your email first, then sign in.',
+  'User already registered': 'This email already has an account. Tap Sign in instead.',
+};
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ text: string; ok?: boolean } | null>(null);
 
-  const run = async (fn: () => Promise<{ error: { message: string } | null }>) => {
+  const submit = async (mode: 'signin' | 'signup') => {
+    const cleanEmail = email.trim();
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) return setMessage({ text: 'Enter a valid email address.' });
+    if (password.length < 6) return setMessage({ text: 'The password must be at least 6 characters.' });
     setBusy(true);
-    const { error } = await fn();
+    setMessage(null);
+    if (mode === 'signin') {
+      const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+      if (error) setMessage({ text: FRIENDLY_ERRORS[error.message] ?? error.message });
+    } else {
+      const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
+      if (error) setMessage({ text: FRIENDLY_ERRORS[error.message] ?? error.message });
+      else if (!data.session) {
+        setMessage({ ok: true, text: `Account created. Open the confirmation link sent to ${cleanEmail}, then come back and tap Sign in.` });
+      }
+    }
     setBusy(false);
-    showError(error);
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 80 }}>
+    <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 80 }} keyboardShouldPersistTaps="handled">
       <Text style={{ fontSize: 28, fontWeight: '800', color: colors.text }}>China Sourcing</Text>
       <Text style={[styles.muted, { marginBottom: 24 }]}>Orders, profit and balance between partners</Text>
       <Card>
-        <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
-        <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
-        <Button title="Sign in" disabled={busy} onPress={() => run(() => supabase.auth.signInWithPassword({ email, password }))} />
-        <Button title="Create account" variant="secondary" disabled={busy}
-          onPress={() => run(async () => {
-            const { data, error } = await supabase.auth.signUp({ email, password });
-            if (!error && !data.session) {
-              notify('Check your email', 'Open the confirmation link we sent you, then come back and sign in.');
-            }
-            return { error };
-          })} />
+        <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false}
+          keyboardType="email-address" autoComplete="email" textContentType="emailAddress" />
+        <Field label="Password (at least 6 characters)" value={password} onChangeText={setPassword} secureTextEntry
+          autoComplete="password" textContentType="password" />
+        <Button title={busy ? 'Please wait…' : 'Sign in'} disabled={busy} onPress={() => submit('signin')} />
+        <Button title="Create account" variant="secondary" disabled={busy} onPress={() => submit('signup')} />
+        {message ? (
+          <Text style={{ marginTop: 10, fontSize: 15, color: message.ok ? colors.green : colors.red }}>{message.text}</Text>
+        ) : null}
       </Card>
     </ScrollView>
   );
